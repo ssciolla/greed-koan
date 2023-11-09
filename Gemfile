@@ -1,5 +1,4 @@
 source "https://rubygems.org"
 
-group :test do
-  gem "minitest", "~> 5.20"
-end
+gem "minitest", "~> 5.20", group: [:test]
+gem "standard", group: [:development, :test]

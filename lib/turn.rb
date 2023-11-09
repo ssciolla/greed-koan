@@ -1,11 +1,10 @@
 require "minitest/autorun"
 
-require_relative "./dice_set.rb"
-require_relative "./player.rb"
-require_relative "./score.rb"
+require_relative "dice_set"
+require_relative "player"
+require_relative "score"
 
 class Turn
-
   attr_reader :player
 
   def initialize(player:, input:, output:)
@@ -14,17 +13,17 @@ class Turn
     @output = output
   end
 
-  def Turn.report_roll_results(dice_values, score)
+  def self.report_roll_results(dice_values, score)
     "You rolled #{dice_values}, which has a score of #{score}."
   end
 
   def continue?(dice_values, roll_score, turn_score)
     prompt = "Would you like to continue? (Y/N)"
     @output.print(
-      Turn.report_roll_results(dice_values, roll_score) + " " +
+      Turn.report_roll_results(dice_values, roll_score) + " " \
       "Your score this turn so far is #{turn_score}. #{prompt}\n"
     )
-    
+
     no_valid_response = true
     response = nil
     while no_valid_response
@@ -38,7 +37,7 @@ class Turn
     response == "Y"
   end
 
-  def start(current_score, seed=nil)
+  def start(current_score, seed = nil)
     turn_score = 0
     num_rolls = 0
     wants_to_continue = true
@@ -60,10 +59,10 @@ class Turn
         turn_score += roll_score
       end
       wants_to_continue = self.continue? dice.values, roll_score, turn_score
-      
+
       if wants_to_continue
         @output.print "You're greedy :P\n"
-        num_active_dice = num_nonscoring_dice == 0 ? 5 : num_nonscoring_dice
+        num_active_dice = (num_nonscoring_dice == 0) ? 5 : num_nonscoring_dice
       end
     end
 
@@ -73,7 +72,6 @@ class Turn
 end
 
 class TurnTest < Minitest::Test
-
   @@player_one = Player.new("One")
 
   def test_report_roll_results
@@ -88,7 +86,7 @@ class TurnTest < Minitest::Test
     turn.continue? [1, 1, 1, 1, 1], 1200, 1200
     assert_equal(
       output.string,
-      "You rolled [1, 1, 1, 1, 1], which has a score of 1200. " +
+      "You rolled [1, 1, 1, 1, 1], which has a score of 1200. " \
       "Your score this turn so far is 1200. Would you like to continue? (Y/N)\n"
     )
   end
@@ -97,18 +95,18 @@ class TurnTest < Minitest::Test
     input = StringIO.new("X\nX\nY\n")
     output = StringIO.new
     turn = Turn.new(player: @@player_one, input: input, output: output)
-    result = turn.continue? [1, 1, 1, 1, 1], 1200, 1200
-    assert_equal 2, output.string.scan(/Response \"X\" was not valid\./).size
-    assert_equal 3, output.string.scan(/Would you like to continue\?/).size
+    turn.continue? [1, 1, 1, 1, 1], 1200, 1200
+    assert_equal 2, output.string.scan(`Response \"X\" was not valid\.`).size
+    assert_equal 3, output.string.scan(`Would you like to continue\?`).size
   end
 
   def test_turn_continue_reprompts_when_empty
     input = StringIO.new("\nY\n")
     output = StringIO.new
     turn = Turn.new(player: @@player_one, input: input, output: output)
-    result = turn.continue? [1, 1, 1, 1, 1], 1200, 1200
+    turn.continue? [1, 1, 1, 1, 1], 1200, 1200
     assert_equal true, output.string.include?("Response \"\" was not valid.")
-    assert_equal 2, output.string.scan(/Would you like to continue\?/).size
+    assert_equal 2, output.string.scan(`Would you like to continue\?`).size
   end
 
   def test_continue_declined

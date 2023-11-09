@@ -1,11 +1,10 @@
 require "minitest/autorun"
 
 class DiceSet
-
   attr_reader :values
 
-  def initialize(seed=nil)
-    @random = seed != nil ? Random.new(seed) : Random.new
+  def initialize(seed = nil)
+    @random = (!seed.nil?) ? Random.new(seed) : Random.new
   end
 
   def roll(number)
@@ -15,7 +14,6 @@ class DiceSet
 end
 
 class DiceSetTest < Minitest::Test
-
   def test_can_create_a_dice_set
     dice = DiceSet.new
     refute_nil dice

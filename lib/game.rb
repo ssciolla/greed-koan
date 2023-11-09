@@ -1,23 +1,22 @@
 require "minitest/autorun"
 
-require_relative "./player.rb"
-require_relative "./turn.rb"
+require_relative "player"
+require_relative "turn"
 
 class GameRuleError < StandardError
 end
 
 class Game
-
   @@in_game_threshold = 300
 
   attr_reader :players
 
-  def initialize(players, ending_score=3000, input=nil, output=nil)
+  def initialize(players, ending_score = 3000, input = nil, output = nil)
     if players.size < 2
       raise GameRuleError, "There must be at least two players."
     end
 
-    players.each { |p| 
+    players.each { |p|
       if !p.instance_of?(Player)
         raise TypeError, "Players must be instances of class Player"
       end
@@ -38,7 +37,7 @@ class Game
     turn_score, = turn.start current_score
     # check if "in game" or able to get "in game"
     if current_score >= @@in_game_threshold || turn_score >= @@in_game_threshold
-      new_score = current_score += turn_score
+      new_score = current_score + turn_score
       puts "Player #{turn.player} has a new score of #{new_score}."
       new_score
     else
@@ -48,7 +47,7 @@ class Game
   end
 
   def start
-    score_data = Hash.new
+    score_data = {}
     @players.each do |p|
       score_data[p] = 0
     end
@@ -88,7 +87,6 @@ class Game
 end
 
 class GameTest < Minitest::Test
-
   @@player_one = Player.new("One")
   @@player_two = Player.new("Two")
 
@@ -104,7 +102,7 @@ class GameTest < Minitest::Test
 
   def test_game_restricts_type_of_players
     assert_raises(TypeError) do
-      game = Game.new([@@player_one, 2])
+      Game.new([@@player_one, 2])
     end
   end
 
