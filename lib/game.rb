@@ -28,20 +28,18 @@ class Game
 
     @input = input.nil? ? $stdin : input
     @output = output.nil? ? $stdout : output
-
-    @score_data = Hash.new
-    @players.each do |p|
-      @score_data[p] = 0
-    end
   end
 
-  def manage_turn(player, current_score)
-    turn = Turn.new(player: player, input: @input, output: @output)
-    turn_score, = turn.start @score_data[player]
+  def turn(player)
+    Turn.new(player: player, input: @input, output: @output)
+  end
+
+  def self.manage_turn(turn, current_score)
+    turn_score, = turn.start current_score
     # check if "in game" or able to get "in game"
     if current_score >= @@in_game_threshold || turn_score >= @@in_game_threshold
       new_score = current_score += turn_score
-      puts "Player #{player} has a new score of #{new_score}."
+      puts "Player #{turn.player} has a new score of #{new_score}."
       new_score
     else
       puts "You did not score high enough to get in the game."
@@ -50,6 +48,11 @@ class Game
   end
 
   def start
+    score_data = Hash.new
+    @players.each do |p|
+      score_data[p] = 0
+    end
+
     puts "You are playing GREED!"
     puts "The game will end once one player reaches #{@ending_score}."
     puts "The other plays will get one remaining turn."
@@ -60,9 +63,8 @@ class Game
     while player_who_reached_ending_score.nil?
       @players.each do |player|
         puts "- - -"
-        current_player = player
-        new_score = self.manage_turn player, @score_data[player]
-        @score_data[player] = new_score
+        new_score = Game.manage_turn self.turn(player), score_data[player]
+        score_data[player] = new_score
         if new_score >= @ending_score
           player_who_reached_ending_score = player
           break
@@ -75,13 +77,13 @@ class Game
     # Give other players one more turn.
     other_players = @players - [player_who_reached_ending_score]
     other_players.each do |player|
-      @score_data[player] = self.manage_turn player, @score_data[player]
+      score_data[player] = Game.manage_turn self.turn(player), score_data[player]
     end
 
-    winner, score = @score_data.max_by { |k, v| v }
+    winner, score = score_data.max_by { |k, v| v }
     puts "#{winner} won the game with a score of #{score}."
 
-    @score_data
+    score_data
   end
 end
 
@@ -89,6 +91,10 @@ class GameTest < Minitest::Test
 
   @@player_one = Player.new("One")
   @@player_two = Player.new("Two")
+
+  def set_up_game
+    Game.new([@@player_one, @@player_two], 500)
+  end
 
   def test_game_requires_two_players
     assert_raises(GameRuleError) do
@@ -107,11 +113,30 @@ class GameTest < Minitest::Test
     assert_equal true, game.players.size == 2
   end
 
-  def test_game_can_be_played_with_stdin_stdout
-    game = Game.new([@@player_one, @@player_two], 500)
-    score_data = game.start
-    assert_equal score_data.size, 2
-    assert_equal score_data.keys, [@@player_one, @@player_two]
-    assert_equal true, score_data.values.all? { |x| x.is_a?(Integer) }
+  def test_game_manage_turn_lets_player_in_game
+    game = self.set_up_game
+    turn = game.turn @@player_one
+    turn.stub :start, 400 do
+      new_score = Game.manage_turn turn, 0
+      assert_equal new_score, 400
+    end
+  end
+
+  def test_game_manage_turn_does_not_let_player_in_game
+    game = self.set_up_game
+    turn = game.turn @@player_two
+    turn.stub :start, 200 do
+      new_score = Game.manage_turn turn, 0
+      assert_equal new_score, 0
+    end
+  end
+
+  def test_game_manage_turn_lets_player_in_game_score_again
+    game = self.set_up_game
+    turn = game.turn @@player_one
+    turn.stub :start, 100 do
+      new_score = Game.manage_turn turn, 350
+      assert_equal new_score, 450
+    end
   end
 end
